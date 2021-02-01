@@ -1,0 +1,35 @@
+server:
+  port: 12663
+      
+spring:
+  application:
+    name: user-profile-service
+  main:
+    allow-bean-definition-overriding: true
+  profiles:
+    active: jdbc
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://192.168.0.75:3306/user_profile?createDatabaseIfNotExist=true
+    username: admin
+    password: 9e60a46d06bc
+    # use separator for schema.sql
+    separator: ^;
+    # use hikari.maximum-pool-size when pool size need to be limmited
+    # - referencec : https://jaehun2841.github.io/2020/01/27/2020-01-27-hikaricp-maximum-pool-size-tuning/#%EC%8B%A4%EC%A0%9C%EB%A1%9C-%EB%A7%9E%EB%8A%94-%EA%B3%B5%EC%8B%9D%EC%9D%B8%EC%A7%80-%EC%95%8C%EC%95%84%EB%B3%B4%EC%9E%90
+    #hikari:
+    #  maximum-pool-size: 5
+    initialization-mode: always
+    continue-on-error: true
+  jpa:    
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    
+serviceInterface:
+  core:
+    thingManager:
+      regExp:
+        thing: '[a-zA-Z0-9:_-]{1,128}+'
+        attributesKey: '[a-zA-Z0-9_.,@/:#!-]+{1,128}'
+        attributesValue: '[a-zA-Z0-9_.,@/:#-]*{1,800}'
