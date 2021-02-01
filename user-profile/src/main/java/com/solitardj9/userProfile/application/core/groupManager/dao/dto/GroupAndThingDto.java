@@ -17,4 +17,9 @@ public class GroupAndThingDto {
 
 	@EmbeddedId
 	private GroupAndThingPks groupAndThingPks;
+	
+	public GroupAndThingDto(String groupName, String thingName) {
+		//
+		this.groupAndThingPks = new GroupAndThingPks(groupName, thingName);
+	}
 }

@@ -10,7 +10,7 @@ spring:
     active: jdbc
   datasource:
     driver-class-name: org.mariadb.jdbc.Driver
-    url: jdbc:mariadb://192.168.0.75:3306/user_profile?createDatabaseIfNotExist=true
+    url: jdbc:mariadb://127.0.0.1:3306/user_profile?createDatabaseIfNotExist=true
     username: admin
     password: 9e60a46d06bc
     # use separator for schema.sql
@@ -24,7 +24,7 @@ spring:
   jpa:    
     hibernate:
       ddl-auto: none
-    show-sql: true
+    show-sql: false
     
 serviceInterface:
   core:

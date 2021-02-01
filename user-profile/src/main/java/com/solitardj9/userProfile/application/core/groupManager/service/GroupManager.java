@@ -5,19 +5,39 @@ import java.util.List;
 import com.solitardj9.userProfile.application.core.groupManager.model.Group;
 import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupAlreayExist;
 import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupBadRequest;
+import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupManagerFailure;
 import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupNotFound;
+import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupUnavailableForDeleteNonLeaf;
 
 public interface GroupManager {
 	
-	public Group insertGroup(Group group) throws ExceptionGroupAlreayExist, ExceptionGroupBadRequest;
+	public Boolean isInitialized();
 	
-	public Group updateGroup(Group group) throws ExceptionGroupNotFound, ExceptionGroupBadRequest;
+	public Group insertGroup(String groupName, String attributes, String groupTypeName, String parentGroupName, String rootGroupName) throws ExceptionGroupAlreayExist, ExceptionGroupBadRequest, ExceptionGroupManagerFailure;
 	
-	public void removeGroup(String groupName, Integer expectedVersion) throws ExceptionGroupNotFound, ExceptionGroupBadRequest;
+	public Group insertGroup(Group group) throws ExceptionGroupAlreayExist, ExceptionGroupBadRequest, ExceptionGroupManagerFailure;
 	
-	public Group getGroup(String groupName) throws ExceptionGroupNotFound;
+	public Group updateGroup(String groupName, String attributes, String groupTypeName, Boolean removeThingType, Boolean merge, String parentGroupName, String rootGroupName) throws ExceptionGroupNotFound, ExceptionGroupBadRequest, ExceptionGroupManagerFailure;
 	
-	public List<Group> getGroupList(String namePrefix, String parentGroupName, Boolean recursive) throws ExceptionGroupNotFound;
+	public Boolean removeGroup(String groupName) throws ExceptionGroupNotFound, ExceptionGroupBadRequest, ExceptionGroupUnavailableForDeleteNonLeaf, ExceptionGroupManagerFailure;
+	
+	public Group getGroup(String groupName) throws ExceptionGroupBadRequest, ExceptionGroupNotFound;
+	
+	public List<Group> getGroupList(String parentGroupName, Boolean recursive) throws ExceptionGroupBadRequest, ExceptionGroupNotFound;
+	
+	public List<Group> getGroupListFromRootToGroup(String parentGroupName) throws ExceptionGroupBadRequest, ExceptionGroupNotFound;
+	
+	public List<Group> getAllGroups();
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	
 //	/**
 //	 * @brief 특정 Thing 이 속한 group 리스트 조회

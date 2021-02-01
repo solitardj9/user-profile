@@ -114,36 +114,36 @@ public class ThingManagerImpl implements ThingManager {
 	@Override
 	public Boolean updateThing(String thingName, String thingTypeName, Boolean removeThingType, String attributes, Boolean merge) throws ExceptionThingBadRequest, ExceptionThingNotFound, ExceptionThingManagerFailure {
 		//
-		if (thingName == null || thingName.isEmpty()) {
-			logger.error("[ThingManager].updateThing : error = thing name is invalid.");
-			throw new ExceptionThingBadRequest();
-		}
-		
-		ThingDto thingDto = getThing(thingName);
-		if (thingDto == null) {
-			logger.error("[ThingManager].updateThing : error = thing is not exist.");
-			throw new ExceptionThingNotFound();
-		}
-		
-		if (removeThingType)
-			thingDto.setThingTypeName(null);
-		else
-			thingDto.setThingTypeName(thingTypeName);
-		
 		try {
-			if (merge) {
-				Thing tmpThing = convertThingDtoToThing(thingDto);
-				tmpThing.mergeAttributes(attributes);
-				thingDto.setAttributes(tmpThing.getAttributes());
+			if (thingName == null || thingName.isEmpty()) {
+				logger.error("[ThingManager].updateThing : error = thing name is invalid.");
+				throw new ExceptionThingBadRequest();
 			}
-			else {
-				thingDto.setAttributes(attributes);
+			
+			ThingDto thingDto = getThing(thingName);
+			if (thingDto == null) {
+				logger.error("[ThingManager].updateThing : error = thing is not exist.");
+				throw new ExceptionThingNotFound();
 			}
-		} catch (Exception e) {
-			logger.error("[ThingManager].updateThing : error = attributes is invallid. " + e);
-		}
+			
+			if (removeThingType)
+				thingDto.setThingTypeName(null);
+			else
+				thingDto.setThingTypeName(thingTypeName);
+			
+			try {
+				if (merge) {
+					Thing tmpThing = convertThingDtoToThing(thingDto);
+					tmpThing.mergeAttributes(attributes);
+					thingDto.setAttributes(tmpThing.getAttributes());
+				}
+				else {
+					thingDto.setAttributes(attributes);
+				}
+			} catch (Exception e) {
+				logger.error("[ThingManager].updateThing : error = attributes is invallid. " + e);
+			}
 		
-		try {
 			saveThing(thingDto);
 			return true;
 		} catch (Exception e) {
