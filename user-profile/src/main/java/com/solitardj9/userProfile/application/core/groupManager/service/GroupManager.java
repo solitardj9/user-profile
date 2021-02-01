@@ -9,6 +9,8 @@ import com.solitardj9.userProfile.application.core.groupManager.model.exception.
 
 public interface GroupManager {
 	
+	public Boolean isInitialized();
+	
 	public Group insertGroup(Group group) throws ExceptionGroupAlreayExist, ExceptionGroupBadRequest;
 	
 	public Group updateGroup(Group group) throws ExceptionGroupNotFound, ExceptionGroupBadRequest;

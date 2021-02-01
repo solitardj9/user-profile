@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 			@ColumnResult(name="group_name", type = String.class),
 			@ColumnResult(name="attributes", type = String.class),
 			@ColumnResult(name="group_type_name", type = String.class),
-			@ColumnResult(name="parent_group", type = String.class)
+			@ColumnResult(name="parent_group_name", type = String.class)
 		}
 	)
 )
@@ -48,6 +48,6 @@ public class GroupDto {
 	@Column(name="group_type_name")
 	private String groupTypeName;
 	
-	@Column(name="parent_group")
+	@Column(name="parent_group_name")
 	private String parentGroupName;
 }
