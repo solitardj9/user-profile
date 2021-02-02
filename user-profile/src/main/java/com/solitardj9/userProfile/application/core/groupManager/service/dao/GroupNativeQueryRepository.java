@@ -1,4 +1,4 @@
-package com.solitardj9.userProfile.application.core.groupManager.dao;
+package com.solitardj9.userProfile.application.core.groupManager.service.dao;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;

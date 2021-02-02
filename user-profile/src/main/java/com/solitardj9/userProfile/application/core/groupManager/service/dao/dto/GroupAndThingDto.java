@@ -1,4 +1,4 @@
-package com.solitardj9.userProfile.application.core.groupManager.dao.dto;
+package com.solitardj9.userProfile.application.core.groupManager.service.dao.dto;
 
 import javax.persistence.EmbeddedId;
 import javax.persistence.Entity;

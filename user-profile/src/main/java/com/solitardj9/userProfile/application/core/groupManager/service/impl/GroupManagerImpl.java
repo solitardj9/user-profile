@@ -15,12 +15,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scalified.tree.TreeNode;
 import com.scalified.tree.multinode.ArrayMultiTreeNode;
-import com.solitardj9.userProfile.application.core.groupManager.dao.GroupAndThingRepository;
-import com.solitardj9.userProfile.application.core.groupManager.dao.GroupNativeQueryRepository;
-import com.solitardj9.userProfile.application.core.groupManager.dao.GroupRepository;
-import com.solitardj9.userProfile.application.core.groupManager.dao.GroupTreeRepository;
-import com.solitardj9.userProfile.application.core.groupManager.dao.dto.GroupDto;
-import com.solitardj9.userProfile.application.core.groupManager.dao.dto.GroupTreeDto;
 import com.solitardj9.userProfile.application.core.groupManager.model.Group;
 import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupAlreayExist;
 import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupBadRequest;
@@ -28,7 +22,13 @@ import com.solitardj9.userProfile.application.core.groupManager.model.exception.
 import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupNotFound;
 import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupUnavailableForDeleteNonLeaf;
 import com.solitardj9.userProfile.application.core.groupManager.service.GroupManager;
-import com.solitardj9.userProfile.application.core.groupManager.service.groupTree.LayeredGroup;
+import com.solitardj9.userProfile.application.core.groupManager.service.dao.GroupAndThingRepository;
+import com.solitardj9.userProfile.application.core.groupManager.service.dao.GroupNativeQueryRepository;
+import com.solitardj9.userProfile.application.core.groupManager.service.dao.GroupRepository;
+import com.solitardj9.userProfile.application.core.groupManager.service.dao.GroupTreeRepository;
+import com.solitardj9.userProfile.application.core.groupManager.service.dao.dto.GroupDto;
+import com.solitardj9.userProfile.application.core.groupManager.service.dao.dto.GroupTreeDto;
+import com.solitardj9.userProfile.application.core.groupManager.service.impl.groupTree.LayeredGroup;
 
 @Service("groupManager")
 public class GroupManagerImpl implements GroupManager {

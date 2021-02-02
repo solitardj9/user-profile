@@ -1,4 +1,4 @@
-package com.solitardj9.userProfile.application.core.groupManager.service.groupTree;
+package com.solitardj9.userProfile.application.core.groupManager.service.impl.groupTree;
 
 import java.io.Serializable;
 import java.util.List;
