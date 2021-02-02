@@ -1,6 +1,7 @@
 package com.solitardj9.userProfile.serviceInterface.core.thingManagerInterface.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,10 +30,12 @@ import com.solitardj9.userProfile.application.core.thingManager.model.exception.
 import com.solitardj9.userProfile.application.core.thingManager.model.exception.ExceptionThingNotFound;
 import com.solitardj9.userProfile.application.core.thingManager.service.ThingManager;
 import com.solitardj9.userProfile.serviceInterface.common.ResponseError;
+import com.solitardj9.userProfile.serviceInterface.core.thingManagerInterface.model.common.AttributePayload;
 import com.solitardj9.userProfile.serviceInterface.core.thingManagerInterface.model.exception.ExceptionThingControllerBadRequest;
 import com.solitardj9.userProfile.serviceInterface.core.thingManagerInterface.model.request.RequestCreateThing;
 import com.solitardj9.userProfile.serviceInterface.core.thingManagerInterface.model.request.RequestUpdateThing;
 import com.solitardj9.userProfile.serviceInterface.core.thingManagerInterface.model.response.ResponseCreateThing;
+import com.solitardj9.userProfile.serviceInterface.core.thingManagerInterface.model.response.ResponseDescribeThing;
 import com.solitardj9.userProfile.util.reqExpUtil.RegExpUtil;
 
 @RestController
@@ -93,10 +96,10 @@ public class ThingManagerController {
 			}
 		}
 		
-		Thing thing = null;
 		try {
 			String attributes = om.writeValueAsString(request.getAttributePayload().getAttributes());
-			thing = thingManager.createThing(thingName, request.getThingTypeName(), attributes, request.getAttributePayload().getMerge());
+			Thing thing = thingManager.createThing(thingName, request.getThingTypeName(), attributes, request.getAttributePayload().getMerge());
+			return new ResponseEntity(new ResponseCreateThing(thing.getThingId(), thing.getThingName()), HttpStatus.OK);
 		} catch (ExceptionThingAlreayExist e) {
 			logger.error("[ThingManagerController].createThing : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
@@ -104,8 +107,6 @@ public class ThingManagerController {
 			logger.error("[ThingManagerController].createThing : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		
-		return new ResponseEntity(new ResponseCreateThing(thing.getThingId(), thing.getThingName()), HttpStatus.OK);
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -119,18 +120,26 @@ public class ThingManagerController {
 			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
 		}
 		
-		Thing thing = null;
 		try {
-			thing = thingManager.getThingByThingName(thingName);
+			Thing thing = thingManager.getThingByThingName(thingName);
+			try {
+				AttributePayload attributePayload = new AttributePayload(om.readValue(thing.getAttributes(), Map.class), null);
+				ResponseDescribeThing response = new ResponseDescribeThing(thing.getThingId(), thing.getThingName(), attributePayload, thing.getThingTypeName());
+				return new ResponseEntity(response, HttpStatus.OK);
+			} catch (JsonProcessingException e) {
+				logger.error("[ThingManagerController].describeThing : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+			}
 		} catch (ExceptionThingNotFound e) {
 			logger.error("[ThingManagerController].describeThing : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
 		} catch (ExceptionThingBadRequest e) {
 			logger.error("[ThingManagerController].describeThing : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		} catch (Exception e) {
+			logger.error("[GroupManagerController].createGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-	
-		return new ResponseEntity(thing, HttpStatus.OK);
 	}
 	
 	/**
@@ -152,7 +161,7 @@ public class ThingManagerController {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@PatchMapping("/things/{thingName}")
 	public ResponseEntity updateThing(@PathVariable("thingName") String thingName,
-										  @RequestBody(required=true) String requestBody) {
+									  @RequestBody(required=true) String requestBody) {
 		//
 		RequestUpdateThing request = null;
 		if (requestBody != null && !requestBody.isEmpty()) {
@@ -174,7 +183,11 @@ public class ThingManagerController {
 		
 		try {
 			String attributes = om.writeValueAsString(request.getAttributePayload().getAttributes());
-			thingManager.updateThing(thingName, request.getThingTypeName(), request.getRemoveThingType(), attributes, request.getAttributePayload().getMerge());
+			Boolean ret = thingManager.updateThing(thingName, request.getThingTypeName(), request.getRemoveThingType(), attributes, request.getAttributePayload().getMerge());
+			if (ret)
+				return new ResponseEntity(HttpStatus.OK);
+			else
+				return new ResponseEntity(new ResponseError("fail to update thing.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (ExceptionThingNotFound e) {
 			logger.error("[ThingManagerController].updateThing : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
@@ -182,8 +195,6 @@ public class ThingManagerController {
 			logger.error("[ThingManagerController].updateThing : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		
-		return new ResponseEntity(HttpStatus.OK);
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -198,7 +209,11 @@ public class ThingManagerController {
 		}
 		
 		try {
-			thingManager.deleteThing(thingName);
+			Boolean ret = thingManager.deleteThing(thingName);
+			if (ret)
+				return new ResponseEntity(HttpStatus.OK);
+			else
+				return new ResponseEntity(new ResponseError("fail to delete thing.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (ExceptionThingNotFound e) {
 			logger.error("[ThingManagerController].deleteThing : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
@@ -206,8 +221,6 @@ public class ThingManagerController {
 			logger.error("[ThingManagerController].deleteThing : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		
-		return new ResponseEntity(HttpStatus.OK);
 	}
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })

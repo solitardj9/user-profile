@@ -16,7 +16,7 @@ public class Group {
 	
 	private static final Logger logger = LoggerFactory.getLogger(Group.class);
 	
-	private Integer id;
+	private Integer groupId;
 	
 	private String groupName;
 	

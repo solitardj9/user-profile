@@ -1,6 +1,6 @@
-package com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.request.group;
+package com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.response.group;
 
-import com.solitardj9.userProfile.serviceInterface.common.RequestDefault;
+import com.solitardj9.userProfile.serviceInterface.common.ResponseDefault;
 import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.common.AttributePayload;
 
 import lombok.AllArgsConstructor;
@@ -12,11 +12,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper=false)
-public class RequestUpdateGroup extends RequestDefault {
-
+public class ResponseUpdateGroup extends ResponseDefault {
+	
+	private String groupId;
+	
+	private String groupName;
+	
 	private AttributePayload attributePayload;
 	
 	private String groupTypeName;
-	
-	private Boolean removeGroupType;
 }

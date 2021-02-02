@@ -2,13 +2,16 @@ package com.solitardj9.userProfile.application.core.groupManager.service.impl;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.PostConstruct;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -20,15 +23,19 @@ import com.solitardj9.userProfile.application.core.groupManager.model.exception.
 import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupBadRequest;
 import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupManagerFailure;
 import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupNotFound;
+import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupUnavailableForDeleteNonEmpty;
 import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupUnavailableForDeleteNonLeaf;
 import com.solitardj9.userProfile.application.core.groupManager.service.GroupManager;
 import com.solitardj9.userProfile.application.core.groupManager.service.dao.GroupAndThingRepository;
 import com.solitardj9.userProfile.application.core.groupManager.service.dao.GroupNativeQueryRepository;
 import com.solitardj9.userProfile.application.core.groupManager.service.dao.GroupRepository;
 import com.solitardj9.userProfile.application.core.groupManager.service.dao.GroupTreeRepository;
+import com.solitardj9.userProfile.application.core.groupManager.service.dao.dto.GroupAndThingDto;
+import com.solitardj9.userProfile.application.core.groupManager.service.dao.dto.GroupAndThingPks;
 import com.solitardj9.userProfile.application.core.groupManager.service.dao.dto.GroupDto;
 import com.solitardj9.userProfile.application.core.groupManager.service.dao.dto.GroupTreeDto;
 import com.solitardj9.userProfile.application.core.groupManager.service.impl.groupTree.LayeredGroup;
+import com.solitardj9.userProfile.application.core.thingManager.service.ThingManager;
 
 @Service("groupManager")
 public class GroupManagerImpl implements GroupManager {
@@ -46,6 +53,9 @@ public class GroupManagerImpl implements GroupManager {
 	
 	@Autowired
 	GroupNativeQueryRepository groupNativeQueryRepository;
+	
+	@Autowired
+	ThingManager thingManager;
 	
 	private Boolean isInitialized = false;
 	
@@ -66,6 +76,7 @@ public class GroupManagerImpl implements GroupManager {
 		return isInitialized;
 	}
 
+	// about group ------------------------------------------------------------------------
 	@Override
 	public Group insertGroup(String groupName, String attributes, String groupTypeName, String parentGroupName, String rootGroupName) throws ExceptionGroupAlreayExist, ExceptionGroupBadRequest, ExceptionGroupManagerFailure {
 		//
@@ -101,7 +112,7 @@ public class GroupManagerImpl implements GroupManager {
 	}
 	
 	@Override
-	public Group updateGroup(String groupName, String attributes, String groupTypeName, Boolean removeThingType, Boolean merge, String parentGroupName, String rootGroupName) throws ExceptionGroupNotFound, ExceptionGroupBadRequest, ExceptionGroupManagerFailure {
+	public Group updateGroup(String groupName, String attributes, String groupTypeName, Boolean removeThingType, Boolean merge) throws ExceptionGroupNotFound, ExceptionGroupBadRequest, ExceptionGroupManagerFailure {
 		//
 		try {
 			if (groupName == null || groupName.isEmpty())
@@ -139,68 +150,73 @@ public class GroupManagerImpl implements GroupManager {
 	}
 
 	@Override
-	public Boolean removeGroup(String groupName) throws ExceptionGroupNotFound, ExceptionGroupBadRequest, ExceptionGroupUnavailableForDeleteNonLeaf, ExceptionGroupManagerFailure {
+	public Boolean removeGroup(String groupName) throws ExceptionGroupNotFound, ExceptionGroupBadRequest, ExceptionGroupUnavailableForDeleteNonLeaf, ExceptionGroupUnavailableForDeleteNonEmpty, ExceptionGroupManagerFailure {
 		//
-		try {
-			if (groupName == null || groupName.isEmpty())
-				throw new ExceptionGroupBadRequest();
-			
-			GroupDto groupDto = getGroupDto(groupName);
-			if (groupDto == null) {
-				logger.error("[GroupManager].removeGroup : error = Group is not exist.");
-				throw new ExceptionGroupNotFound();
-			}
-			
-			String rootGroupName = groupDto.getRootGroupName();
-			if (groupName.equals(rootGroupName)) {
-				//
-				try {
-					TreeNode<String> groupTree = convertStringToGroupTree(getGroupTreeDto(rootGroupName).getGroupTree());
+		if (groupName == null || groupName.isEmpty())
+			throw new ExceptionGroupBadRequest();
+		
+		GroupDto groupDto = getGroupDto(groupName);
+		if (groupDto == null) {
+			logger.error("[GroupManager].removeGroup : error = Group is not exist.");
+			throw new ExceptionGroupNotFound();
+		}
+		
+		String rootGroupName = groupDto.getRootGroupName();
+		if (groupName.equals(rootGroupName)) {
+			//
+			try {
+				TreeNode<String> groupTree = convertStringToGroupTree(getGroupTreeDto(rootGroupName).getGroupTree());
 
-					// need to be empty child group
-					if (groupTree.isLeaf() == false)
-						throw new ExceptionGroupUnavailableForDeleteNonLeaf();
+				// need to be empty child group
+				if (groupTree.isLeaf() == false)
+					throw new ExceptionGroupUnavailableForDeleteNonLeaf();
+				
+				// need to has empty things
+				Set<String> thingNames = getThingNamesInGroup(rootGroupName, false);
+				if (thingNames != null & !thingNames.isEmpty())
+					throw new ExceptionGroupUnavailableForDeleteNonEmpty();
 
-					// remove groupDto
-					removeGroupDto(rootGroupName);
+				// remove groupDto
+				removeGroupDto(rootGroupName);
+				
+				// remove groupTreeDto 
+				removeGroupTreeDto(rootGroupName);
 					
-					// remove groupTreeDto 
-					removeGroupTreeDto(rootGroupName);
-						
-					return true;
-				} catch (Exception e) {
-					logger.error("[GroupManager].removeGroup #1 : error = " + e);
-					throw new ExceptionGroupManagerFailure();
-				}
+				return true;
+			} catch (Exception e) {
+				logger.error("[GroupManager].removeGroup #1 : error = " + e);
+				throw new ExceptionGroupManagerFailure();
 			}
-			else {
-				//
-				try {
-					GroupTreeDto groupTreeDto = getGroupTreeDto(rootGroupName);
-					TreeNode<String> groupTree = convertStringToGroupTree(groupTreeDto.getGroupTree());
-					TreeNode<String> subTree = groupTree.find(groupName); 
-					
-					// need to be empty child group
-					if (subTree.isLeaf() == false)
-						throw new ExceptionGroupUnavailableForDeleteNonLeaf();
-					
-					// remove groupDto
-					removeGroupDto(groupName);
-					
-					// remove groupTreeDto (delete subtree and update)
-					groupTree.remove(subTree);
-					groupTreeDto.setGroupTree(convertGroupTreeToString(groupTree));
-					saveGroupTreeDto(groupTreeDto);
-					
-					return true;
-				} catch (Exception e) {
-					logger.error("[GroupManager].removeGroup #2 : error = " + e);
-					throw new ExceptionGroupManagerFailure();
-				}
+		}
+		else {
+			//
+			try {
+				GroupTreeDto groupTreeDto = getGroupTreeDto(rootGroupName);
+				TreeNode<String> groupTree = convertStringToGroupTree(groupTreeDto.getGroupTree());
+				TreeNode<String> subTree = groupTree.find(groupName); 
+				
+				// need to be empty child group
+				if (subTree.isLeaf() == false)
+					throw new ExceptionGroupUnavailableForDeleteNonLeaf();
+				
+				// need to has empty things
+				Set<String> thingNames = getThingNamesInGroup(groupName, false);
+				if (thingNames != null & !thingNames.isEmpty())
+					throw new ExceptionGroupUnavailableForDeleteNonEmpty(); 
+				
+				// remove groupDto
+				removeGroupDto(groupName);
+				
+				// remove groupTreeDto (delete subtree and update)
+				groupTree.remove(subTree);
+				groupTreeDto.setGroupTree(convertGroupTreeToString(groupTree));
+				saveGroupTreeDto(groupTreeDto);
+				
+				return true;
+			} catch (Exception e) {
+				logger.error("[GroupManager].removeGroup #2 : error = " + e);
+				throw new ExceptionGroupManagerFailure();
 			}
-		} catch(Exception e) {
-			logger.error("[GroupManager].removeGroup : error = " + e);
-			throw new ExceptionGroupManagerFailure();
 		}
 	}
 
@@ -281,6 +297,21 @@ public class GroupManagerImpl implements GroupManager {
 				childGroups.add(getGroupDto(subtreesIter.data()));
 		}
 		return childGroups;
+	}
+	
+	private List<String> getChainedChildGroupNames(GroupDto parentGroupDto) {
+		//
+		List<String> childGroupNames = new ArrayList<>();
+		
+		TreeNode<String> groupTree = convertStringToGroupTree(getGroupTreeDto(parentGroupDto.getRootGroupName()).getGroupTree());
+		TreeNode<String> parentGroupTree = groupTree.find(parentGroupDto.getGroupName());
+		Collection<? extends TreeNode<String>> subtrees = parentGroupTree.postOrdered();
+		
+		for (TreeNode<String> subtreesIter : subtrees) {
+			if (!subtreesIter.data().equals(parentGroupDto.getGroupName()))
+				childGroupNames.add(subtreesIter.data());
+		}
+		return childGroupNames;
 	}
 	
 	@Override
@@ -516,4 +547,204 @@ public class GroupManagerImpl implements GroupManager {
 		//
 		return new GroupDto(null, group.getGroupName(), group.getAttributes(), group.getGroupTypeName(), group.getParentGroupName(), group.getRootGroupName());
 	}
+
+	// about thing ------------------------------------------------------------------------
+	@Override
+	public Boolean addThingToGroup(String thingName, String groupName) throws ExceptionGroupBadRequest, ExceptionGroupNotFound, ExceptionGroupManagerFailure {
+		//
+		if (!thingManager.isValidThing(thingName))
+			throw new ExceptionGroupBadRequest();
+				
+		try {
+			// check groupName
+			if (getGroupDto(groupName) != null) {
+				GroupAndThingDto groupAndThingDto = new GroupAndThingDto(groupName, thingName);
+				saveGroupAndThingDto(groupAndThingDto);
+				return true;
+			}
+			else {
+				logger.error("[GroupManager].addThingToThingGroup : error = Group is not exist.");
+				throw new ExceptionGroupNotFound();
+			}
+				
+		} catch (Exception e) {
+			logger.error("[GroupManager].addThingToThingGroup : error = " + e);
+			throw new ExceptionGroupManagerFailure();
+		}
+	}
+	
+	@Override
+	public Boolean updateGroupsOfThing(List<String> groupsToAdd, List<String> groupsToRemove, String thingName) throws ExceptionGroupBadRequest {
+		//
+		if (!thingManager.isValidThing(thingName))
+			throw new ExceptionGroupBadRequest();
+		
+		try {
+			List<GroupAndThingDto> groupAndThingDtosToRemove = new ArrayList<>();
+			for (String iter : groupsToRemove) {
+				groupAndThingDtosToRemove.add(new GroupAndThingDto(iter, thingName));
+			}
+			deleteGroupAndThingDtos(groupAndThingDtosToRemove);
+			
+			List<GroupAndThingDto> groupAndThingDtosToAdd = new ArrayList<>();
+			for (String iter : groupsToAdd) {
+				groupAndThingDtosToAdd.add(new GroupAndThingDto(iter, thingName));
+			}
+			saveGroupAndThingDtos(groupAndThingDtosToAdd);
+			
+			return true;
+		} catch (Exception e) {
+			logger.error("[GroupManager].updateGroupsOfThing : error = " + e);
+			return false;
+		}
+	}
+	
+	@Override
+	public Boolean removeThingFromGroup(String groupName, String thingName) throws ExceptionGroupBadRequest, ExceptionGroupNotFound, ExceptionGroupManagerFailure {
+		//
+		if (!thingManager.isValidThing(thingName))
+			throw new ExceptionGroupBadRequest();
+		
+		try {
+			// check groupName
+			if (getGroupDto(groupName) != null) {
+				//
+				GroupAndThingDto groupAndThingDto = getGroupAndThingDto(new GroupAndThingPks(groupName, thingName));
+				if (groupAndThingDto != null) {
+					try {
+						deleteGroupAndThingDto(groupAndThingDto);
+						return true;
+					} catch (Exception e) {
+						logger.error("[GroupManager].removeThingFromGroup : error = " + e);
+						throw new ExceptionGroupManagerFailure();
+					}
+				}
+				else {
+					logger.error("[GroupManager].removeThingFromGroup : error = ");
+					throw new ExceptionGroupNotFound();
+				}
+			}
+			else {
+				logger.error("[GroupManager].removeThingFromGroup : error = Group is not exist.");
+				throw new ExceptionGroupNotFound();
+			}
+				
+		} catch (Exception e) {
+			logger.error("[GroupManager].removeThingFromGroup : error = " + e);
+			throw new ExceptionGroupManagerFailure();
+		}
+	}
+	
+	@Override
+	public Set<String> getThingNamesInGroup(String groupName, Boolean recursive) throws ExceptionGroupNotFound, ExceptionGroupManagerFailure {
+		//
+		try {
+			GroupDto groupDto = getGroupDto(groupName);
+			// check groupName
+			if (groupDto != null) {
+				//
+				Set<String> retSet = new HashSet<>();
+				
+				Set<String> targetGroups = new HashSet<>();
+				if (recursive.equals(false)) {
+					targetGroups.add(groupName);
+				}
+				else {
+					targetGroups.addAll(getChainedChildGroupNames(groupDto));
+				}
+				
+				List<GroupAndThingDto> groupAndThingDtos = getGroupAndThingDtosInGroupNames(targetGroups);
+				for (GroupAndThingDto iter : groupAndThingDtos) {
+					retSet.add(iter.getGroupAndThingPks().getThingName());
+				}
+				return retSet;
+			}
+			else {
+				logger.error("[GroupManager].removeThingFromGroup : error = Group is not exist.");
+				throw new ExceptionGroupNotFound();
+			}
+		} catch (Exception e) {
+			logger.error("[GroupManager].getThingNamesInGroup : error = " + e);
+			throw new ExceptionGroupManagerFailure();
+		}
+	}
+	
+	@Override
+	public Set<String> getGroupNamesOfThing(String thingName) throws ExceptionGroupBadRequest, ExceptionGroupManagerFailure {
+		//
+		// check thingName
+		if (!thingManager.isValidThing(thingName))
+			throw new ExceptionGroupBadRequest();
+		
+		try {
+			//
+			Set<String> retSet = new HashSet<>();
+			
+			List<GroupAndThingDto> groupAndThingDtos = getGroupAndThingDtosByThingName(thingName);
+			for (GroupAndThingDto iter : groupAndThingDtos) {
+				retSet.add(iter.getGroupAndThingPks().getGroupName());
+			}
+			return retSet;
+		} catch (Exception e) {
+			logger.error("[GroupManager].getGroupNamesOfThing : error = " + e);
+			throw new ExceptionGroupManagerFailure();
+		}
+	}
+	
+	@Override
+	public List<GroupAndThingDto> getAllGroupAndThingDtos() {
+		//
+		return groupAndThingRepository.findAll();
+	}
+	
+	private void saveGroupAndThingDto(GroupAndThingDto groupAndThingDto) {
+		//
+		groupAndThingRepository.save(groupAndThingDto);
+	}
+	
+	private void saveGroupAndThingDtos(List<GroupAndThingDto> groupAndThingDtos) {
+		//
+		groupAndThingRepository.saveAll(groupAndThingDtos);
+	}
+	
+	private void deleteGroupAndThingDto(GroupAndThingDto groupAndThingDto) {
+		//
+		groupAndThingRepository.delete(groupAndThingDto);
+	}
+	
+	private void deleteGroupAndThingDtos(List<GroupAndThingDto> groupAndThingDtos) {
+		//
+		groupAndThingRepository.deleteAll(groupAndThingDtos);
+	}
+	
+	private GroupAndThingDto getGroupAndThingDto(GroupAndThingPks groupAndThingPks) {
+		//
+		return groupAndThingRepository.getOne(groupAndThingPks);
+	}
+	
+	private List<GroupAndThingDto> getGroupAndThingDtosInGroupNames(Set<String> groupNames) {
+		//
+		List<GroupAndThingDto> retList = new ArrayList<>();
+		
+		for (String iter : groupNames) {
+			GroupAndThingDto groupAndThingDto = new GroupAndThingDto(iter, null);
+			Example<GroupAndThingDto> example = Example.of(groupAndThingDto);
+			
+			List<GroupAndThingDto> result = groupAndThingRepository.findAll(example);
+			retList.addAll(result);
+		}
+		
+		return retList;
+	}
+	
+	private List<GroupAndThingDto> getGroupAndThingDtosByThingName(String thingName) {
+		//
+		GroupAndThingDto groupAndThingDto = new GroupAndThingDto(null, thingName);
+		
+		Example<GroupAndThingDto> example = Example.of(groupAndThingDto);
+		List<GroupAndThingDto> result = groupAndThingRepository.findAll(example);
+		
+		return result;
+	}
+	
 }

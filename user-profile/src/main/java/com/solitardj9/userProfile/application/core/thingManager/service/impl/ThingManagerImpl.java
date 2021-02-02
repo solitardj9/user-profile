@@ -189,6 +189,20 @@ public class ThingManagerImpl implements ThingManager {
 		return things;
 	}
 	
+	@Override
+	public Boolean isValidThing(String thingName) {
+		//
+		if (thingName == null || thingName.isEmpty())
+			return false;
+		
+		try {
+			return isExist(thingName);
+		} catch(Exception e) {
+			logger.error("[ThingManager].isValidThing : error = " + e);
+			return false;
+		}
+	}
+	
 	private ThingDto getThing(String thingName) {
 		//
 		return thingRepository.findByThingName(thingName);
@@ -202,6 +216,11 @@ public class ThingManagerImpl implements ThingManager {
 	private void deleteThing(ThingDto thingDto) {
 		//
 		thingRepository.delete(thingDto);
+	}
+	
+	private Boolean isExist(String thingName) {
+		//
+		return thingRepository.existsByThingName(thingName);
 	}
 	
 	private List<ThingDto> selectThings(String attributeName, String attributeValue, String thingTypeName) {
