@@ -2,7 +2,9 @@ package com.solitardj9.userProfile.application.core.groupManager.model.exception
 
 import org.springframework.http.HttpStatus;
 
-public class ExceptionGroupUnavailableForDeleteNonLeaf extends Exception{
+import com.solitardj9.userProfile.application.common.CustomException;
+
+public class ExceptionGroupUnavailableForDeleteNonLeaf extends Exception implements CustomException {
     //
 	private static final long serialVersionUID = 682345054698465032L;
 

@@ -16,12 +16,12 @@ public class GroupNativeQueryRepository {
 	public Integer createGroupTable() {
 		//
 		String sql = "CREATE TABLE IF NOT EXISTS group_ ("
-				   + "id						int NOT NULL AUTO_INCREMENT, "
-				   + "group_name				varchar(128) DEFAULT NULL, "
-				   + "attributes				LONGTEXT DEFAULT NULL, "
-				   + "group_type_name			varchar(128) DEFAULT NULL, "
-				   + "parent_group_name			varchar(128) DEFAULT NULL, "
-				   + "root_group_name			varchar(128) DEFAULT NULL, "
+				   + "id					int NOT NULL AUTO_INCREMENT, "
+				   + "group_name			varchar(128) DEFAULT NULL, "
+				   + "attributes			LONGTEXT DEFAULT NULL, "
+				   + "group_type_name		varchar(128) DEFAULT NULL, "
+				   + "parent_group_name		varchar(128) DEFAULT NULL, "
+				   + "root_group_name		varchar(128) DEFAULT NULL, "
 				   + "PRIMARY KEY PKEY_GROUP (id),"
 				   + "CONSTRAINT UQ_GROUP UNIQUE (group_name));";
 		
@@ -34,8 +34,8 @@ public class GroupNativeQueryRepository {
 	public Integer createGroupTreeTable() {
 		//
 		String sql = "CREATE TABLE IF NOT EXISTS group_tree ("
-				   + "root_group_name			varchar(128) DEFAULT NULL, "
-				   + "group_tree				LONGTEXT DEFAULT NULL, "
+				   + "root_group_name		varchar(128) DEFAULT NULL, "
+				   + "group_tree			LONGTEXT DEFAULT NULL, "
 				   + "PRIMARY KEY PKEY_GROUP_TREE (root_group_name));";
 		
 		Integer result = entityManager.createNativeQuery(sql).executeUpdate();
@@ -45,7 +45,7 @@ public class GroupNativeQueryRepository {
 	
 	@Transactional
 	public Integer createGroupAndThingTable() {
-		String sql = "CREATE TABLE IF NOT EXISTS group_thing_map ("
+		String sql = "CREATE TABLE IF NOT EXISTS group_and_thing ("
 				   + "group_name			varchar(128) NOT NULL, "
 				   + "thing_name			varchar(128) NOT NULL, "
 				   + "PRIMARY KEY (group_name, thing_name));";

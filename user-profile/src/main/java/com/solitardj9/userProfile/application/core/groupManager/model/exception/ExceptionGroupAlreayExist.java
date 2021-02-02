@@ -2,7 +2,9 @@ package com.solitardj9.userProfile.application.core.groupManager.model.exception
 
 import org.springframework.http.HttpStatus;
 
-public class ExceptionGroupAlreayExist extends Exception{
+import com.solitardj9.userProfile.application.common.CustomException;
+
+public class ExceptionGroupAlreayExist extends Exception implements CustomException {
     //
 	private static final long serialVersionUID = 9103682951043439590L;
 

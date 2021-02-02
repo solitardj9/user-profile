@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(callSuper=false)
-public class RequestUpdateGroupsWithThing extends RequestDefault {
+public class RequestUpdateGroupsOfThing extends RequestDefault {
 	
 	private String thingName;
 	

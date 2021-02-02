@@ -1,7 +1,9 @@
 package com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.controller;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.Map;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,16 +11,41 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.solitardj9.userProfile.application.core.groupManager.model.Group;
+import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupAlreayExist;
+import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupBadRequest;
+import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupManagerFailure;
+import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupNotFound;
+import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupUnavailableForDeleteNonEmpty;
+import com.solitardj9.userProfile.application.core.groupManager.model.exception.ExceptionGroupUnavailableForDeleteNonLeaf;
 import com.solitardj9.userProfile.application.core.groupManager.service.GroupManager;
+import com.solitardj9.userProfile.serviceInterface.common.ResponseError;
+import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.common.AttributePayload;
+import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.common.GroupMetadata;
 import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.exception.ExceptionGroupControllerBadRequest;
 import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.request.group.RequestCreateGroup;
+import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.request.group.RequestUpdateGroup;
+import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.request.thing.RequestAddThingToGroup;
+import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.request.thing.RequestRemoveThingFromGroup;
+import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.request.thing.RequestUpdateGroupsOfThing;
+import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.response.group.ResponseCreateGroup;
+import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.response.group.ResponseDescribeGroup;
+import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.response.group.ResponseUpdateGroup;
+import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.response.thing.RespoonseListGroupsOfThing;
+import com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.response.thing.RespoonseListThingsInGroup;
 import com.solitardj9.userProfile.util.reqExpUtil.RegExpUtil;
 
 @RestController
@@ -42,7 +69,7 @@ public class GroupManagerController {
 	private ObjectMapper om = new ObjectMapper();
 	
 	/**
-	 * @param thingGroupName
+	 * @param groupName
 	 * @param requestBody
 	 *		{
 	 *			
@@ -53,531 +80,481 @@ public class GroupManagerController {
 	 *				},
 	 *				"merge": boolean
 	 *			},
+	 *			"groupTypeName": "string",
 	 *			"parentGroupName": "string",
 	 *		}
 	 * @return
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@PostMapping("/groups/{groupName}")
-	public ResponseEntity createThingGroup(@PathVariable("groupName") String groupName,
-												@RequestBody(required=true) String requestBody) {		
+	public ResponseEntity createGroup(@PathVariable("groupName") String groupName,
+									  @RequestBody(required=true) String requestBody) {		
 		//
-//		RequestCreateThingGroup request = null;
-//		if (requestBody != null && !requestBody.isEmpty()) {
-//			//
-//			try {
-//				request = om.readValue(requestBody, RequestCreateThingGroup.class);
-//			} catch (JsonProcessingException e) {
-//				logger.error("[ThingGroupManagerController].createThingGroup : error = " + e);
-//				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
-//			}
-//			
-//			try {
-//				checkRegExpForRequestCreateThingGroup(thingGroupName, request);
-//			} catch (ExceptionThingGroupBadRequest e) {
-//				logger.error("[ThingGroupManagerController].createThing : error = " + e);
-//				return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//			}
-//		}
-//		
-//		ThingGroup thingGroup = null;
-//		try {
-//			thingGroup = thingGroupManager.createThingGroup(thingGroupName, request.getParentGroupName(), request.getThingGroupProperties().getAttributePayload().getAttributes(), request.getThingGroupProperties().getAttributePayload().getMerge(), request.getThingGroupProperties().getThingGroupDescription());
-//		} catch (ExceptionThingGroupAlreayExist e) {
-//			logger.error("[ThingGroupManagerController].createThing : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch (Exception e) {
-//			logger.error("[ThingGroupManagerController].createThing : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
-//		}
-//		
-//		return new ResponseEntity(new ResponseCreateThing(thingGroup.getId().toString(), thingGroup.getThingGroupName()), HttpStatus.OK);
+		RequestCreateGroup request = null;
+		if (requestBody != null && !requestBody.isEmpty()) {
+			//
+			try {
+				request = om.readValue(requestBody, RequestCreateGroup.class);
+			} catch (JsonProcessingException e) {
+				logger.error("[GroupManagerController].createGroup : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
+			}
+			
+			try {
+				checkRegExpForRequestCreateGroup(groupName, request);
+			} catch (ExceptionGroupControllerBadRequest e) {
+				logger.error("[GroupManagerController].createGroup : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+			}
+		}
 		
-		return new ResponseEntity(HttpStatus.OK);
+		try {
+			String attributes = om.writeValueAsString(request.getAttributePayload().getAttributes());
+			Group group = new Group(null, groupName, attributes, request.getGroupTypeName(), request.getParentGroupName(), null);
+			group = groupManager.insertGroup(group);
+			return new ResponseEntity(new ResponseCreateGroup(group.getGroupId().toString(), group.getGroupName()), HttpStatus.OK);
+		} catch (ExceptionGroupAlreayExist | ExceptionGroupBadRequest | ExceptionGroupManagerFailure e) {
+			logger.error("[GroupManagerController].createGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		} catch (Exception e) {
+			logger.error("[GroupManagerController].createGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
 	}
 	
-//	/**
-//	 * @param thingGroupName
-//	 * @return
-//	 *		{
-//	 *			"thingGroupId" : "string",
-//	 *			"thingGroupName" : "string",
-//	 *			"version" : number,
-//	 *			"thingGroupProperties" : {
-//	 *				"attributePayload" : {
-//	 *					"attributes" : {
-//	 *						"string" : "string"
-//	 *					},
-//	 *					"merge" : null
-//	 *				},
-//	 *				"thingGroupDescription" : "string"
-//	 *			},
-//	 *			"thingGroupMetadata" : {
-//	 *				"parentGroupName" : "string",
-//	 *				"rootToParentThingGroups" : [ "{parentGroupName}" ]
-//	 *			}
-//	 *		}
-//	 */
-//	@SuppressWarnings({ "rawtypes", "unchecked" })
-//	@GetMapping("/thing-groups/{thingGroupName}")
-//	public ResponseEntity describeThingGroup(@PathVariable("thingGroupName") String thingGroupName) {
-//		//
-//		try {
-//			checkRegExpForRequestThingGroup(thingGroupName);
-//		} catch (ExceptionThingGroupBadRequest e) {
-//			logger.error("[ThingGroupManagerController].describeThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		}
-//		
-//		ResponseDescribeThingGroup response = new ResponseDescribeThingGroup();
-//		ThingGroup thingGroup = null;
-//		ThingGroup parentThingGroup = null;
-//		List<String> rootToParentGroupNames = new ArrayList<>();
-//		try {
-//			thingGroup = thingGroupManager.getThingGroupByThingGroupName(thingGroupName);
-//			parentThingGroup = thingGroupManager.getThingGroupByThingGroupName(thingGroup.getParentGroupName());
-//			rootToParentGroupNames = thingGroupManager.getNamesOfRootToGroup(parentThingGroup.getParentGroupName());
-//			
-//			response.setThingGroupId(thingGroup.getId().toString());
-//			response.setThingGroupName(thingGroup.getThingGroupName());
-//			response.setVersion(thingGroup.getVersion());
-//			
-//			response.setThingGroupProperties(new ThingGroupProperties(new AttributePayload(thingGroup.getAttributes(), null), thingGroup.getThingGroupDescription()));
-//			
-//			response.setThingGroupMetadata(new ThingGroupMetadata(parentThingGroup.getParentGroupName(), rootToParentGroupNames));
-//		} catch (ExceptionThingGroupNotFound e) {
-//			logger.error("[ThingGroupManagerController].describeThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch (com.solitardj9.microiot.application.thing.groupManager.model.exception.ExceptionThingGroupBadRequest e) {
-//			logger.error("[ThingGroupManagerController].describeThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		}
-//	
-//		return new ResponseEntity(response, HttpStatus.OK);
-//	}
-//	
-//	
-//	/**
-//	 * @param thingGroupName
-//	 * @param requestBody
-//	 *		{
-//	 *			"thingGroupProperties" : {
-//	 *				"attributePayload" : {
-//	 *					"attributes" : {
-//	 *						"string" : "string"
-//	 *					},
-//	 *					"merge": boolean
-//	 *				},
-//	 *				"thingGroupDescription": "string"
-//	 *			},
-//	 *			"expectedVersion" : number
-//	 *		}
-//	 * @return
-//	 *		{
-//	 *			"version" : number
-//	 *		}
-//	 */
-//	@SuppressWarnings({ "rawtypes", "unchecked" })
-//	@PatchMapping("/thing-groups/{thingGroupName}")
-//	public ResponseEntity updateThingGroup(@PathVariable("thingName") String thingGroupName,
-//										   @RequestBody(required=true) String requestBody) {
-//		//
-//		RequestUpdateThingGroup request = null;
-//		if (requestBody != null && !requestBody.isEmpty()) {
-//			//
-//			try {
-//				request = om.readValue(requestBody, RequestUpdateThingGroup.class);
-//			} catch (JsonProcessingException e) {
-//				logger.error("[ThingGroupManagerController].updateThingGroup : error = " + e);
-//				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
-//			}
-//			
-//			try {
-//				checkRegExpForRequestUpdateThingGroup(thingGroupName, request);
-//			} catch (ExceptionThingGroupBadRequest e) {
-//				logger.error("[ThingGroupManagerController].updateThingGroup : error = " + e);
-//				return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//			}
-//		}
-//
-//		ResponseUpdateThingGroup response = new ResponseUpdateThingGroup();
-//		try {
-//			Integer version = thingGroupManager.updateThingGroup(thingGroupName, request.getThingGroupProperties().getAttributePayload().getAttributes(), request.getThingGroupProperties().getAttributePayload().getMerge(), request.getExpectedVersion());
-//			response.setVersion(version);
-//		} catch (ExceptionThingGroupNotFound e) {
-//			logger.error("[ThingGroupManagerController].updateThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch (ExceptionThingGroupVersionMismatch e) {
-//			logger.error("[ThingGroupManagerController].updateThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch (Exception e) {
-//			logger.error("[ThingGroupManagerController].updateThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
-//		}
-//		
-//		return new ResponseEntity(response, HttpStatus.OK);
-//	}
-//	
-//	@SuppressWarnings({ "rawtypes", "unchecked" })
-//	@DeleteMapping("/thing-groups/{thingGroupName}")
-//	public ResponseEntity deleteThingGroup(@PathVariable("thingGroupName") String thingGroupName,
-//										   @RequestParam(value="expectedVersion", required=false) Integer expectedVersion) {
-//		//
-//		try {
-//			checkRegExpForRequestThingGroup(thingGroupName);
-//		} catch (ExceptionThingGroupBadRequest e) {
-//			logger.error("[ThingGroupManagerController].deleteThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		}
-//		
-//		try {
-//			thingGroupManager.deleteThingGroup(thingGroupName, expectedVersion);
-//		} catch (ExceptionThingGroupNotFound e) {
-//			logger.error("[ThingGroupManagerController].deleteThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch (ExceptionThingGroupVersionMismatch e) {
-//			logger.error("[ThingGroupManagerController].deleteThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch (Exception e) {
-//			logger.error("[ThingGroupManagerController].deleteThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
-//		}
-//		
-//		return new ResponseEntity(HttpStatus.OK);
-//	}	
-//
-//	/**
-//	 * @param parentGroup
-//	 * @param recursive
-//	 * @return
-//	 *		{
-//	 *			"thingGroups": [ "{thingGroupName}" ]
-//	 *		}
-//	 */
-//	@SuppressWarnings({ "rawtypes", "unchecked" })
-//	@GetMapping("/thing-groups")
-//	public ResponseEntity listThingGroups(
-//			   @RequestParam(value = "parentGroup", required=false) String parentGroupName,
-//			   @RequestParam(value = "recursive", required=false) Boolean recursive) {
-//		//
-//		try {
-//			checkRegExpForRequestThingGroup(parentGroupName);
-//		} catch (ExceptionThingGroupBadRequest e) {
-//			logger.error("[ThingGroupManagerController].listThingGroups : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		}
-//
-//		ResponseListThingGroups response = new ResponseListThingGroups();
-//		try {
-//			List<String> thingGroupNames = thingGroupManager.getNamesByParentGroup(parentGroupName, recursive);
-//			response.setThingGroups(thingGroupNames);
-//		} catch (Exception e) {
-//			logger.error("[ThingGroupManagerController].listThingGroups : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
-//		}
-//		
-//		return new ResponseEntity(response, HttpStatus.OK);
-//	}
-//	
-//	/**
-//	 * @param requestBody
-//	 *		{
-//	 *			"thingGroupName": "string",
-//	 *			"thingName": "string"
-//	 *		}
-//	 * @return
-//	 */
-//	@SuppressWarnings({ "rawtypes", "unchecked" })
-//	@PutMapping("/thing-groups/thing")
-//	public ResponseEntity addThingToThingGroup(@RequestBody(required=true) String requestBody) {
-//		//
-//		RequestAddThingToThingGroup request = null;
-//		if (requestBody != null && !requestBody.isEmpty()) {
-//			//
-//			try {
-//				request = om.readValue(requestBody, RequestAddThingToThingGroup.class);
-//			} catch (JsonProcessingException e) {
-//				logger.error("[ThingGroupManagerController].addThingToThingGroup : error = " + e);
-//				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
-//			}
-//			
-//			try {
-//				checkRegExpForRequestAddThingToThingGroup(request);
-//			} catch (ExceptionThingGroupBadRequest e) {
-//				logger.error("[ThingGroupManagerController].addThingToThingGroup : error = " + e);
-//				return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//			}
-//		}
-//		
-//		try {
-//			thingGroupManager.addThingToThingGroup(request.getThingGroupName(), request.getThingName());
-//		} catch (com.solitardj9.microiot.application.thing.groupManager.model.exception.ExceptionThingGroupBadRequest e) {
-//			logger.error("[ThingGroupManagerController].addThingToThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch (ExceptionThingGroupNotFound e) {
-//			logger.error("[ThingGroupManagerController].addThingToThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch (Exception e) {
-//			logger.error("[ThingGroupManagerController].addThingToThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
-//		}
-//
-//		return new ResponseEntity(HttpStatus.OK);
-//	}
-//	
-//	/**
-//	 * @param requestBody
-//	 *		{
-//	 *			"thingGroupsToAdd": [ "string" ],
-//	 *			"thingGroupsToRemove": [ "string" ],
-//	 *			"thingName": "string"
-//	 *		}
-//	 * @return
-//	 */
-//	@SuppressWarnings({ "rawtypes", "unchecked" })
-//	@PatchMapping("/thing-groups/thing")
-//	public ResponseEntity updateThingGroupsForThing(@RequestBody(required=true) String requestBody) {
-//		//
-//		RequestUpdateThingGroupForThing request = null;
-//		if (requestBody != null && !requestBody.isEmpty()) {
-//			//
-//			try {
-//				request = om.readValue(requestBody, RequestUpdateThingGroupForThing.class);
-//			} catch (JsonProcessingException e) {
-//				logger.error("[ThingGroupManagerController].updateThingGroupForThing : error = " + e);
-//				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
-//			}
-//			
-//			try {
-//				checkRegExpForRequestUpdateThingGroupForThing(request);
-//			} catch (ExceptionThingGroupBadRequest e) {
-//				logger.error("[ThingGroupManagerController].updateThingGroupForThing : error = " + e);
-//				return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//			}
-//		}
-//		
-//		try {
-//			thingGroupManager.updateThingGroupsForThing(request.getThingGroupsToAdd(), request.getThingGroupsToRemove(), request.getThingName());
-//		} catch (com.solitardj9.microiot.application.thing.groupManager.model.exception.ExceptionThingGroupBadRequest e) {
-//			logger.error("[ThingGroupManagerController].updateThingGroupForThing : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch (Exception e) {
-//			logger.error("[ThingGroupManagerController].updateThingGroupForThing : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
-//		}
-//
-//		return new ResponseEntity(HttpStatus.OK);
-//	}
-//
-//	/**
-//	 * @param body
-//	 *		{
-//	 *			"thingGroupName": "string",
-//	 *			"thingName": "string"
-//	 *		}
-//	 * @return
-//	 */
-//	@SuppressWarnings({ "rawtypes", "unchecked" })
-//	@DeleteMapping("/thing-groups/thing")
-//	public ResponseEntity removeThingFromThingGroup(@RequestBody(required=false) String requestBody) {
-//		//
-//		RequestRemoveThingFromThingGroup request = null;
-//		if (requestBody != null && !requestBody.isEmpty()) {
-//			//
-//			try {
-//				request = om.readValue(requestBody, RequestRemoveThingFromThingGroup.class);
-//			} catch (JsonProcessingException e) {
-//				logger.error("[ThingGroupManagerController].removeThingFromThingGroup : error = " + e);
-//				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
-//			}
-//			
-//			try {
-//				checkRegExpForRequestRemoveThingFromThingGroup(request);
-//			} catch (ExceptionThingGroupBadRequest e) {
-//				logger.error("[ThingGroupManagerController].removeThingFromThingGroup : error = " + e);
-//				return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//			}
-//		}
-//		
-//		try {
-//			thingGroupManager.removeThingFromThingGroup(request.getThingGroupName(), request.getThingName());
-//		} catch (com.solitardj9.microiot.application.thing.groupManager.model.exception.ExceptionThingGroupBadRequest e) {
-//			logger.error("[ThingGroupManagerController].removeThingFromThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch (Exception e) {
-//			logger.error("[ThingGroupManagerController].removeThingFromThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
-//		}
-//			
-//		return new ResponseEntity(HttpStatus.OK);
-//	}
-//	
-//	/**
-//	 * 
-//	 * @param thingGroupName
-//	 * @param recursive
-//	 * @return
-//	 * {
-//    		"things": [ "string" ]
-//		}
-//	 */
-//	@SuppressWarnings({ "rawtypes", "unchecked" })
-//	@GetMapping("/thing-groups/{thingGroupName}/things")
-//	public ResponseEntity listThingsInThingGroup(@PathVariable("thingGroupName") String thingGroupName,
-//												 @RequestParam(value="recursive", required=true) Boolean recursive) {
-//		//
-//		try {
-//			checkRegExpForRequestThingGroup(thingGroupName);
-//		} catch (ExceptionThingGroupBadRequest e) {
-//			logger.error("[ThingGroupManagerController].listThingsInThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		}
-//				
-//		RespoonseListThingsInThingGroup response = new RespoonseListThingsInThingGroup();
-//		try {
-//			List<String> things = thingGroupManager.getNamesOfThingsInThingGroup(thingGroupName, recursive);
-//			response.setThings(things);
-//		} catch(ExceptionThingGroupNotFound e) {
-//			logger.error("[ThingGroupManagerController].listThingsInThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch(Exception e) {
-//			logger.error("[ThingGroupManagerController].listThingsInThingGroup : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);			
-//		} 
-//				
-//		return new ResponseEntity(response, HttpStatus.OK);
-//	}
-//	
-//	/**
-//	 * @param thingName
-//	 * @return
-//	 *		{
-//	 *			"thingGroups" : [ "string" ]
-//	 *		}
-//	 */
-//	@SuppressWarnings({ "unchecked", "rawtypes" })
-//	@GetMapping("/things/{thingName}/thing-groups")
-//	public ResponseEntity listThingGroupsForThing(@PathVariable("thingName") String thingName) {
-//		//
-//		try {
-//			checkRegExpForRequestDescribeThing(thingName);
-//		} catch (ExceptionThingBadRequest e) {
-//			logger.error("[ThingGroupManagerController].listThingGroupsForThing : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		}
-//		
-//		RespoonseListThingGroupsForThing response = new RespoonseListThingGroupsForThing();
-//		try {
-//			List<String> thingGroups = thingGroupManager.getNamesOfThingGroupsForThing(thingName);
-//			response.setThingGroups(thingGroups);
-//		} catch (ExceptionThingNotFound e) {
-//			logger.error("[ThingGroupManagerController].listThingGroupsForThing : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-//		} catch (Exception e) {
-//			logger.error("[ThingGroupManagerController].listThingGroupsForThing : error = " + e);
-//			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
-//		}
-//
-//		return new ResponseEntity(response, HttpStatus.OK);
-//	}
-	
-	private Boolean checkRegExpForRequestCreateThingGroup(String thingGroupName, RequestCreateGroup request) throws ExceptionGroupControllerBadRequest {
+	/**
+	 * @param groupName
+	 * @return
+	 *		{
+	 *			"groupId" : "string",
+	 *			"groupName" : "string",
+	 *			"attributePayload": {
+	 *				"attributes": {
+	 *					"string" : object
+	 *					...
+	 *				},
+	 *			},
+	 *			"groupTypeName": "string",
+	 *			"groupMetadata" : {
+	 *				"parentGroupName" : "string",
+	 *				"rootToParentThingGroups" : [ {JSon object for group}...{} ]
+	 *			}
+	 *		}
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@GetMapping("/groups/{groupName}")
+	public ResponseEntity describeGroup(@PathVariable("groupName") String groupName) {
 		//
-		if (!RegExpUtil.isValidExpression(thingGroupName, regExpGroup, false))
+		try {
+			checkRegExpForRequestGroup(groupName);
+		} catch (ExceptionGroupControllerBadRequest e) {
+			logger.error("[GroupManagerController].describeGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		}
+		
+		try {
+			Group group = groupManager.getGroup(groupName);
+			String parentGroupName = group.getParentGroupName();
+			
+			List<Group> rootToParentGroups = new ArrayList<>();
+			if (parentGroupName != null)
+				rootToParentGroups = groupManager.getGroupListFromRootToGroup(parentGroupName);
+			
+			try {
+				AttributePayload attributePayload = new AttributePayload(om.readValue(group.getAttributes(), Map.class), null);
+				
+				List<String> rootToParentGroupNames = new ArrayList<>();
+				for (Group iter : rootToParentGroups) {
+					rootToParentGroupNames.add(iter.getGroupName());
+				}
+				GroupMetadata groupMetadata = new GroupMetadata(parentGroupName, rootToParentGroupNames);
+				
+				ResponseDescribeGroup response = new ResponseDescribeGroup(group.getGroupId().toString(), group.getGroupName(), attributePayload, groupMetadata, group.getGroupTypeName());
+				return new ResponseEntity(response, HttpStatus.OK);
+			} catch (JsonProcessingException e) {
+				logger.error("[GroupManagerController].describeGroup : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+		} catch (ExceptionGroupNotFound | ExceptionGroupBadRequest e) {
+			logger.error("[GroupManagerController].describeGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		} catch (Exception e) {
+			logger.error("[GroupManagerController].createGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+	
+	/**
+	 * @param groupName
+	 * @param requestBody
+	 *		{
+	 *			"attributePayload": {
+	 *				"attributes": {
+	 *					"string" : object
+	 *					...
+	 *				},
+	 *			},
+	 *			"removeGroupType": boolean,
+	 *			"groupTypeName": "string"
+	 *		}
+	 * @return
+	 * 		{
+	 *			"attributePayload": {
+	 *				"attributes": {
+	 *					"string" : object
+	 *					...
+	 *				},
+	 *			},
+	 *			"groupTypeName": "string"
+	 *		}
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@PatchMapping("/groups/{groupName}")
+	public ResponseEntity updateGroup(@PathVariable("groupName") String groupName,
+									  @RequestBody(required=true) String requestBody) {
+		//
+		RequestUpdateGroup request = null;
+		if (requestBody != null && !requestBody.isEmpty()) {
+			//
+			try {
+				request = om.readValue(requestBody, RequestUpdateGroup.class);
+			} catch (JsonProcessingException e) {
+				logger.error("[GroupManagerController].updateGroup : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
+			}
+			
+			try {
+				checkRegExpForRequestUpdateGroup(groupName, request);
+			} catch (ExceptionGroupControllerBadRequest e) {
+				logger.error("[GroupManagerController].updateGroup : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+			}
+		}
+		
+		try {
+			try {
+				String attributes = om.writeValueAsString(request.getAttributePayload().getAttributes());
+				Group group = groupManager.updateGroup(groupName, attributes, request.getGroupTypeName(), request.getRemoveGroupType(), request.getAttributePayload().getMerge());
+				
+				AttributePayload attributePayload = new AttributePayload(om.readValue(group.getAttributes(), Map.class), null);
+				ResponseUpdateGroup response = new ResponseUpdateGroup(group.getGroupId().toString(), group.getGroupName(), attributePayload, group.getGroupTypeName());
+				return new ResponseEntity(response, HttpStatus.OK);
+			} catch (JsonProcessingException e) {
+				logger.error("[GroupManagerController].updateGroup : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+		} catch (ExceptionGroupNotFound | ExceptionGroupBadRequest | ExceptionGroupManagerFailure e) {
+			logger.error("[GroupManagerController].updateGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		} catch (Exception e) {
+			logger.error("[GroupManagerController].createGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+	
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@DeleteMapping("/groups/{groupName}")
+	public ResponseEntity deleteGroup(@PathVariable("groupName") String groupName) {
+		//
+		try {
+			checkRegExpForRequestGroup(groupName);
+		} catch (ExceptionGroupControllerBadRequest e) {
+			logger.error("[GroupManagerController].deleteGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		}
+		
+		try {
+			Boolean ret = groupManager.removeGroup(groupName);
+			if (ret)
+				return new ResponseEntity(HttpStatus.OK);
+			else
+				return new ResponseEntity(new ResponseError("fail to delete group.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (ExceptionGroupNotFound | ExceptionGroupBadRequest | ExceptionGroupUnavailableForDeleteNonLeaf | ExceptionGroupUnavailableForDeleteNonEmpty | ExceptionGroupManagerFailure e) {
+			logger.error("[GroupManagerController].deleteGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		} catch (Exception e) {
+			logger.error("[GroupManagerController].deleteGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}	
+
+	/**
+	 * @param requestBody
+	 *		{
+	 *			"groupName": "string",
+	 *			"thingName": "string"
+	 *		}
+	 * @return
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@PutMapping("/thing-groups/thing")
+	public ResponseEntity addThingToGroup(@RequestBody(required=true) String requestBody) {
+		//
+		RequestAddThingToGroup request = null;
+		if (requestBody != null && !requestBody.isEmpty()) {
+			//
+			try {
+				request = om.readValue(requestBody, RequestAddThingToGroup.class);
+			} catch (JsonProcessingException e) {
+				logger.error("[GroupManagerController].addThingToGroup : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
+			}
+			
+			try {
+				checkRegExpForRequestAddThingToGroup(request);
+			} catch (ExceptionGroupControllerBadRequest e) {
+				logger.error("[GroupManagerController].addThingToGroup : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+			}
+		}
+		
+		try {
+			Boolean ret = groupManager.addThingToGroup(request.getGroupName(), request.getThingName());
+			if (ret)
+				return new ResponseEntity(HttpStatus.OK);
+			else
+				return new ResponseEntity(new ResponseError("fail to add thing to group.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (ExceptionGroupBadRequest | ExceptionGroupNotFound | ExceptionGroupManagerFailure e) {
+			logger.error("[GroupManagerController].addThingToGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		} catch (Exception e) {
+			logger.error("[GroupManagerController].addThingToGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+	
+	/**
+	 * @param requestBody
+	 *		{
+	 *			"groupNamesToAdd": [ "string" ],
+	 *			"groupNamesToRemove": [ "string" ],
+	 *			"thingName": "string"
+	 *		}
+	 * @return
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@PatchMapping("/thing-groups/thing")
+	public ResponseEntity updateGroupsOfThing(@RequestBody(required=true) String requestBody) {
+		//
+		RequestUpdateGroupsOfThing request = null;
+		if (requestBody != null && !requestBody.isEmpty()) {
+			//
+			try {
+				request = om.readValue(requestBody, RequestUpdateGroupsOfThing.class);
+			} catch (JsonProcessingException e) {
+				logger.error("[GroupManagerController].updateGroupsOfThing : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
+			}
+			
+			try {
+				checkRegExpForRequestUpdateGroupsOfThing(request);
+			} catch (ExceptionGroupControllerBadRequest e) {
+				logger.error("[GroupManagerController].updateGroupsOfThing : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+			}
+		}
+		
+		try {
+			Boolean ret = groupManager.updateGroupsOfThing(request.getGroupNamesToAdd(), request.getGroupNamesToRemove(), request.getThingName());
+			if (ret)
+				return new ResponseEntity(HttpStatus.OK);
+			else
+				return new ResponseEntity(new ResponseError("fail to update groups of thing.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (ExceptionGroupBadRequest e) {
+			logger.error("[GroupManagerController].updateGroupsOfThing : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		} catch (Exception e) {
+			logger.error("[GroupManagerController].updateGroupsOfThing : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	/**
+	 * @param body
+	 *		{
+	 *			"groupName": "string",
+	 *			"thingName": "string"
+	 *		}
+	 * @return
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@DeleteMapping("/thing-groups/thing")
+	public ResponseEntity removeThingFromGroup(@RequestBody(required=false) String requestBody) {
+		//
+		RequestRemoveThingFromGroup request = null;
+		if (requestBody != null && !requestBody.isEmpty()) {
+			//
+			try {
+				request = om.readValue(requestBody, RequestRemoveThingFromGroup.class);
+			} catch (JsonProcessingException e) {
+				logger.error("[GroupManagerController].removeThingFromGroup : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.BAD_REQUEST.value()), HttpStatus.BAD_REQUEST);
+			}
+			
+			try {
+				checkRegExpForRequestRemoveThingFromGroup(request);
+			} catch (ExceptionGroupControllerBadRequest e) {
+				logger.error("[GroupManagerController].removeThingFromGroup : error = " + e);
+				return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+			}
+		}
+		
+		try {
+			Boolean ret = groupManager.removeThingFromGroup(request.getGroupName(), request.getThingName());
+			if (ret)
+				return new ResponseEntity(HttpStatus.OK);
+			else
+				return new ResponseEntity(new ResponseError("fail to remove thing from group.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (ExceptionGroupBadRequest e) {
+			logger.error("[GroupManagerController].removeThingFromGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		} catch (Exception e) {
+			logger.error("[GroupManagerController].removeThingFromGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	/**
+	 * 
+	 * @param thingGroupName
+	 * @param recursive
+	 * @return
+	 * {
+    		"things": [ "string" ]
+		}
+	 */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	@GetMapping("/thing-groups/{groupName}/things")
+	public ResponseEntity listThingsInGroup(@PathVariable("groupName") String groupName,
+											@RequestParam(value="recursive", required=true) Boolean recursive) {
+		//
+		try {
+			checkRegExpForRequestGroup(groupName);
+		} catch (ExceptionGroupControllerBadRequest e) {
+			logger.error("[GroupManagerController].listThingsInGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		}
+				
+		try {
+			Set<String> thingNames = groupManager.getThingNamesInGroup(groupName, recursive);
+			RespoonseListThingsInGroup response = new RespoonseListThingsInGroup(thingNames);
+			return new ResponseEntity(response, HttpStatus.OK);
+		} catch(ExceptionGroupNotFound | ExceptionGroupManagerFailure e) {
+			logger.error("[GroupManagerController].listThingsInGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		} catch(Exception e) {
+			logger.error("[GroupManagerController].listThingsInGroup : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);			
+		}
+	}
+	
+	/**
+	 * @param thingName
+	 * @return
+	 *		{
+	 *			"thingGroups" : [ "string" ]
+	 *		}
+	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	@GetMapping("/thing-groups/things/{thingName}")
+	public ResponseEntity listGroupsOfThing(@PathVariable("thingName") String thingName) {
+		//
+		try {
+			checkRegExpForRequestGroup(thingName);
+		} catch (ExceptionGroupControllerBadRequest e) {
+			logger.error("[GroupManagerController].listGroupsOfThing : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		}
+		
+		try {
+			Set<String> groupNames = groupManager.getGroupNamesOfThing(thingName);
+			RespoonseListGroupsOfThing response = new RespoonseListGroupsOfThing(groupNames);
+			return new ResponseEntity(response, HttpStatus.OK);
+		} catch (ExceptionGroupBadRequest | ExceptionGroupManagerFailure e) {
+			logger.error("[GroupManagerController].listGroupsOfThing : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
+		} catch (Exception e) {
+			logger.error("[GroupManagerController].listGroupsOfThing : error = " + e);
+			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+	
+	private Boolean checkRegExpForRequestCreateGroup(String groupName, RequestCreateGroup request) throws ExceptionGroupControllerBadRequest {
+		//
+		if (!RegExpUtil.isValidExpression(groupName, regExpGroup, false))
 			throw new ExceptionGroupControllerBadRequest();
 		
-		if (!RegExpUtil.isValidExpression(request.getParentGroupName(), regExpGroup, true))
+		if (request.getAttributePayload() == null)
+			throw new ExceptionGroupControllerBadRequest();
+		
+		if (!RegExpUtil.isValidExpression(request.getGroupTypeName(), regExpGroup, true))
 			throw new ExceptionGroupControllerBadRequest();
 		
 		return true;
 	}
 	
-//	private Boolean checkRegExpForRequestUpdateThingGroup(String thingGroupName, RequestUpdateThingGroup request) throws ExceptionGroupControllerBadRequest {
-//		//
-//		if (!RegExpUtil.isValidExpression(thingGroupName, regExpGroup, false))
-//			throw new ExceptionGroupControllerBadRequest();
-//		
-//		if (request.getThingGroupProperties() == null)
-//			throw new ExceptionGroupControllerBadRequest();
-//		
-//		if (request.getThingGroupProperties().getAttributePayload() == null)
-//			throw new ExceptionGroupControllerBadRequest();
-//		
-//		for (Entry<String, String> entry : request.getThingGroupProperties().getAttributePayload().getAttributes().entrySet()) {
-//			//
-//			String key = entry.getKey();
-//			String value = entry.getValue();	
-//			
-//			if (!RegExpUtil.isValidExpression(key, regExpAttributeKey, false)) {
-//				throw new ExceptionGroupControllerBadRequest();
-//			}
-//
-//			if (!RegExpUtil.isValidExpression(value, regExpAttributeValue, true)) {
-//				throw new ExceptionGroupControllerBadRequest();
-//			}
-//		}
-//		
-//		if (request.getExpectedVersion() == null)
-//			throw new ExceptionGroupControllerBadRequest();
-//		
-//		return true;
-//	}
-//	
-//	private Boolean checkRegExpForRequestThingGroup(String thingGroupName) throws ExceptionGroupControllerBadRequest {
-//		//
-//		if (!RegExpUtil.isValidExpression(thingGroupName, regExpGroup, false))
-//			throw new ExceptionGroupControllerBadRequest();
-//		
-//		return true;
-//	}
-//	
-//	private Boolean checkRegExpForRequestAddThingToThingGroup(RequestAddThingToThingGroup request) throws ExceptionGroupControllerBadRequest {
-//		//
-//		if (!RegExpUtil.isValidExpression(request.getThingGroupName(), regExpGroup, false))
-//			throw new ExceptionGroupControllerBadRequest();
-//		
-//		if (!RegExpUtil.isValidExpression(request.getThingName(), regExpGroup, false))
-//			throw new ExceptionGroupControllerBadRequest();
-//		
-//		return true;
-//	}
-//	
-//	private Boolean checkRegExpForRequestUpdateThingGroupForThing(RequestUpdateThingGroupForThing request) throws ExceptionGroupControllerBadRequest {
-//		//
-//		List<String> thingGroupsToAdd = request.getThingGroupsToAdd();
-//		for (String iter : thingGroupsToAdd) {
-//			if (!RegExpUtil.isValidExpression(iter, regExpGroup, false))
-//				throw new ExceptionGroupControllerBadRequest();
-//		}
-//		
-//		List<String> thingGroupsToRemove = request.getThingGroupsToRemove();
-//		for (String iter : thingGroupsToRemove) {
-//			if (!RegExpUtil.isValidExpression(iter, regExpGroup, false))
-//				throw new ExceptionGroupControllerBadRequest();
-//		}
-//		
-//		if (!RegExpUtil.isValidExpression(request.getThingName(), regExpGroup, false))
-//			throw new ExceptionGroupControllerBadRequest();
-//		
-//		return true;
-//	}
-//	
-//	private Boolean checkRegExpForRequestRemoveThingFromThingGroup(RequestRemoveThingFromThingGroup request) throws ExceptionGroupControllerBadRequest {
-//		//
-//		if (!RegExpUtil.isValidExpression(request.getThingGroupName(), regExpGroup, false))
-//			throw new ExceptionGroupControllerBadRequest();
-//		
-//		if (!RegExpUtil.isValidExpression(request.getThingName(), regExpGroup, false))
-//			throw new ExceptionGroupControllerBadRequest();
-//		
-//		return true;
-//	}
-//	
-//	private Boolean checkRegExpForRequestDescribeThing(String thingName) throws ExceptionGroupControllerBadRequest {
-//		//
-//		if (!RegExpUtil.isValidExpression(thingName, regExpGroup, false))
-//			throw new ExceptionGroupControllerBadRequest();
-//		
-//		return true;
-//	}
+	private Boolean checkRegExpForRequestGroup(String groupName) throws ExceptionGroupControllerBadRequest {
+		//
+		if (!RegExpUtil.isValidExpression(groupName, regExpGroup, false))
+			throw new ExceptionGroupControllerBadRequest();
+		
+		return true;
+	}
+	
+	private Boolean checkRegExpForRequestUpdateGroup(String groupName, RequestUpdateGroup request) throws ExceptionGroupControllerBadRequest {
+		//
+		if (!RegExpUtil.isValidExpression(groupName, regExpGroup, false))
+			throw new ExceptionGroupControllerBadRequest();
+		
+		if (request.getAttributePayload() == null)
+			throw new ExceptionGroupControllerBadRequest();
+		
+		if (!RegExpUtil.isValidExpression(request.getGroupTypeName(), regExpGroup, true))
+			throw new ExceptionGroupControllerBadRequest();
+		
+		return true;
+	}
+	
+	private Boolean checkRegExpForRequestAddThingToGroup(RequestAddThingToGroup request) throws ExceptionGroupControllerBadRequest {
+		//
+		if (!RegExpUtil.isValidExpression(request.getGroupName(), regExpGroup, false))
+			throw new ExceptionGroupControllerBadRequest();
+		
+		if (!RegExpUtil.isValidExpression(request.getThingName(), regExpGroup, false))
+			throw new ExceptionGroupControllerBadRequest();
+		
+		return true;
+	}
+	
+	private Boolean checkRegExpForRequestUpdateGroupsOfThing(RequestUpdateGroupsOfThing request) throws ExceptionGroupControllerBadRequest {
+		//
+		List<String> groupNamesToAdd = request.getGroupNamesToAdd();
+		for (String iter : groupNamesToAdd) {
+			if (!RegExpUtil.isValidExpression(iter, regExpGroup, false))
+				throw new ExceptionGroupControllerBadRequest();
+		}
+		
+		List<String> groupNamesToRemove = request.getGroupNamesToRemove();
+		for (String iter : groupNamesToRemove) {
+			if (!RegExpUtil.isValidExpression(iter, regExpGroup, false))
+				throw new ExceptionGroupControllerBadRequest();
+		}
+		
+		if (!RegExpUtil.isValidExpression(request.getThingName(), regExpGroup, false))
+			throw new ExceptionGroupControllerBadRequest();
+		
+		return true;
+	}
+	
+	private Boolean checkRegExpForRequestRemoveThingFromGroup(RequestRemoveThingFromGroup request) throws ExceptionGroupControllerBadRequest {
+		//
+		if (!RegExpUtil.isValidExpression(request.getGroupName(), regExpGroup, false))
+			throw new ExceptionGroupControllerBadRequest();
+		
+		if (!RegExpUtil.isValidExpression(request.getThingName(), regExpGroup, false))
+			throw new ExceptionGroupControllerBadRequest();
+		
+		return true;
+	}
+
 }

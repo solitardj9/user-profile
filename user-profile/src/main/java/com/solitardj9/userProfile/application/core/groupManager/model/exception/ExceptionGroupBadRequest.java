@@ -2,7 +2,9 @@ package com.solitardj9.userProfile.application.core.groupManager.model.exception
 
 import org.springframework.http.HttpStatus;
 
-public class ExceptionGroupBadRequest extends Exception{
+import com.solitardj9.userProfile.application.common.CustomException;
+
+public class ExceptionGroupBadRequest extends Exception implements CustomException {
 	//
 	private static final long serialVersionUID = 1320124312301679075L;
 

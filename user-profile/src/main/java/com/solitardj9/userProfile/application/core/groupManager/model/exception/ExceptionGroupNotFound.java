@@ -2,7 +2,9 @@ package com.solitardj9.userProfile.application.core.groupManager.model.exception
 
 import org.springframework.http.HttpStatus;
 
-public class ExceptionGroupNotFound extends Exception{
+import com.solitardj9.userProfile.application.common.CustomException;
+
+public class ExceptionGroupNotFound extends Exception implements CustomException {
     //
 	private static final long serialVersionUID = -3494134810296213776L;
 

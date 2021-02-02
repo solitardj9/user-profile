@@ -22,4 +22,6 @@ public class ResponseDescribeGroup extends ResponseDefault {
 	private AttributePayload attributePayload;
 	
 	private GroupMetadata groupMetadata;
+	
+	private String groupTypeName;
 }

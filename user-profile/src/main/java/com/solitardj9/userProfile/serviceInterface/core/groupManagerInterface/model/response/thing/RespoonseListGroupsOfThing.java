@@ -1,6 +1,6 @@
 package com.solitardj9.userProfile.serviceInterface.core.groupManagerInterface.model.response.thing;
 
-import java.util.List;
+import java.util.Set;
 
 import com.solitardj9.userProfile.serviceInterface.common.ResponseDefault;
 
@@ -15,5 +15,5 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper=false)
 public class RespoonseListGroupsOfThing extends ResponseDefault {
 	
-	private List<String> groupNames;
+	private Set<String> groupNames;
 }

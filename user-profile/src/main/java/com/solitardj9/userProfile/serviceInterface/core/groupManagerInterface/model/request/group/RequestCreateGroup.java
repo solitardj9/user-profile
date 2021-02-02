@@ -16,5 +16,7 @@ public class RequestCreateGroup extends RequestDefault {
 	
 	private AttributePayload attributePayload;
 	
+	private String groupTypeName;
+	
 	private String parentGroupName;
 }

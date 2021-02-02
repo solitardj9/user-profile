@@ -9,4 +9,6 @@ import com.solitardj9.userProfile.application.core.thingManager.service.dao.dto.
 public interface ThingRepository extends JpaRepository<ThingDto, Integer> {
 
 	ThingDto findByThingName(String thingName);
+	
+	Boolean existsByThingName(String thingName);
 }

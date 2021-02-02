@@ -23,4 +23,6 @@ public interface ThingManager {
 	public Boolean deleteThing(String thingName) throws ExceptionThingBadRequest, ExceptionThingNotFound, ExceptionThingManagerFailure;
 	
 	public List<Thing> getThings(String attributeName, String attributeValue, String thingTypeName);
+	
+	public Boolean isValidThing(String thingName);
 }
