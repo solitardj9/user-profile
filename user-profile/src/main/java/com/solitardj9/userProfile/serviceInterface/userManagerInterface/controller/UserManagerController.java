@@ -1,5 +1,6 @@
 package com.solitardj9.userProfile.serviceInterface.userManagerInterface.controller;
 
+import java.util.ArrayList;
 import java.util.Map;
 
 import org.slf4j.Logger;
@@ -146,7 +147,7 @@ public class UserManagerController {
 			User user = userManager.createUser(userName, attributes, request.getAttributePayload().getMerge());
 			
 			if (user == null)
-				return new ResponseEntity(new ResponseError("fail to create user.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+				return new ResponseEntity(new ResponseError("FailToCreateUserFromUserManager", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 			
 			try {
 				AttributePayload attributePayload = new AttributePayload(om.readValue(user.getAttributes(), Map.class), null);
@@ -326,7 +327,7 @@ public class UserManagerController {
 			if (ret)
 				return new ResponseEntity(HttpStatus.OK);
 			else
-				return new ResponseEntity(new ResponseError("fail to delete user.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+				return new ResponseEntity(new ResponseError("FailToDeleteUserFromUserManager.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (ExceptionUserBadRequest | ExceptionUserNotFound | ExceptionUserManagerFailure e) {
 			logger.error("[UserManagerController].deleteUser : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
@@ -354,7 +355,7 @@ public class UserManagerController {
 			if (ret)
 				return new ResponseEntity(HttpStatus.OK);
 			else
-				return new ResponseEntity(new ResponseError("fail to add friend.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+				return new ResponseEntity(new ResponseError("FailToAddFriendFromUserManager.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (ExceptionUserBadRequest | ExceptionUserNotFound | ExceptionUserManagerFailure e) {
 			logger.error("[UserManagerController].addFriend : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
@@ -382,7 +383,7 @@ public class UserManagerController {
 			if (ret)
 				return new ResponseEntity(HttpStatus.OK);
 			else
-				return new ResponseEntity(new ResponseError("fail to add friend.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
+				return new ResponseEntity(new ResponseError("FailToRemoveFriendFromUserManager.", HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 		} catch (ExceptionUserBadRequest | ExceptionUserNotFound | ExceptionUserManagerFailure e) {
 			logger.error("[UserManagerController].removeFriend : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
@@ -424,6 +425,10 @@ public class UserManagerController {
 	
 	private Object getValueOfJsonString(String attributes, String keyPath) {
 		//
-		return JsonUtil.readValue(attributes, keyPath);
+		try {
+			return JsonUtil.readValue(attributes, keyPath);
+		} catch (Exception e) {
+			return new ArrayList<String>();
+		}
 	}
 }
