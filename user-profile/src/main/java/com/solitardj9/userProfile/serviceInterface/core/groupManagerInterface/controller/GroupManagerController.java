@@ -556,5 +556,4 @@ public class GroupManagerController {
 		
 		return true;
 	}
-
 }

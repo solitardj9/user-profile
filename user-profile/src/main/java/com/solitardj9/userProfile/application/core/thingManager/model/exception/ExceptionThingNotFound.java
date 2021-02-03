@@ -2,7 +2,9 @@ package com.solitardj9.userProfile.application.core.thingManager.model.exception
 
 import org.springframework.http.HttpStatus;
 
-public class ExceptionThingNotFound extends Exception{
+import com.solitardj9.userProfile.application.common.CustomException;
+
+public class ExceptionThingNotFound extends Exception implements CustomException {
     //
 	private static final long serialVersionUID = 4373100817960844011L;
 

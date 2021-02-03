@@ -2,7 +2,9 @@ package com.solitardj9.userProfile.application.core.thingManager.model.exception
 
 import org.springframework.http.HttpStatus;
 
-public class ExceptionThingManagerFailure extends Exception{
+import com.solitardj9.userProfile.application.common.CustomException;
+
+public class ExceptionThingManagerFailure extends Exception implements CustomException {
     //
 	private static final long serialVersionUID = 7357666297530064739L;
 
