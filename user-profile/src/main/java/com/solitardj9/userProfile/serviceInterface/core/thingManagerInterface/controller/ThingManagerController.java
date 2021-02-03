@@ -130,10 +130,7 @@ public class ThingManagerController {
 				logger.error("[ThingManagerController].describeThing : error = " + e);
 				return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 			}
-		} catch (ExceptionThingNotFound e) {
-			logger.error("[ThingManagerController].describeThing : error = " + e);
-			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
-		} catch (ExceptionThingBadRequest e) {
+		} catch (ExceptionThingNotFound | ExceptionThingBadRequest e) {
 			logger.error("[ThingManagerController].describeThing : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
 		} catch (Exception e) {
