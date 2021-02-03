@@ -59,6 +59,9 @@ public class ThingManagerImpl implements ThingManager {
 			throw new ExceptionThingAlreayExist();
 		}
 		
+		if (attributes == null || attributes.isEmpty() || attributes.equals("null"))
+			attributes = "{}";
+		
 		try {
 			thingDto = new ThingDto(null, thingName, attributes, thingTypeName);
 			saveThing(thingDto);

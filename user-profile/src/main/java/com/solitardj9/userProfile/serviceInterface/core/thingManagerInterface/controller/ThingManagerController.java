@@ -134,7 +134,7 @@ public class ThingManagerController {
 			logger.error("[ThingManagerController].describeThing : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), e.getErrCode()), e.getHttpStatus());
 		} catch (Exception e) {
-			logger.error("[GroupManagerController].createGroup : error = " + e);
+			logger.error("[GroupManagerController].describeThing : error = " + e);
 			return new ResponseEntity(new ResponseError(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR.value()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -158,7 +158,7 @@ public class ThingManagerController {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@PatchMapping("/things/{thingName}")
 	public ResponseEntity updateThing(@PathVariable("thingName") String thingName,
-									  @RequestBody(required=true) String requestBody) {
+									  @RequestBody(required=false) String requestBody) {
 		//
 		RequestUpdateThing request = null;
 		if (requestBody != null && !requestBody.isEmpty()) {

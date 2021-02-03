@@ -38,6 +38,12 @@ public class JsonUtil {
 		return dc.read(keyPath);
 	}
 	
+	public static Object readValue(Map<String, Object> map, String keyPath) {
+		//
+		DocumentContext dc = JsonPath.parse(map);
+		return dc.read(keyPath);
+	}
+	
 	public static String mergeJsonString(String jsonString, String updateJsonString) {
         //
 		if (jsonString == null || jsonString.isEmpty()) {

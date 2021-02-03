@@ -96,6 +96,9 @@ public class GroupManagerImpl implements GroupManager {
 			GroupDto groupDto = getGroupDto(groupName);
 			if (groupDto == null) {
 				//  
+				if (group.getAttributes() == null || group.getAttributes().isEmpty() || group.getAttributes().equals("null"))
+					group.setAttributes("{}");
+				
 				groupDto = createGroup(group);
 				if (groupDto != null)
 					return convertGroupDtoToGroup(groupDto);
@@ -150,7 +153,7 @@ public class GroupManagerImpl implements GroupManager {
 	}
 
 	@Override
-	public Boolean removeGroup(String groupName) throws ExceptionGroupNotFound, ExceptionGroupBadRequest, ExceptionGroupUnavailableForDeleteNonLeaf, ExceptionGroupUnavailableForDeleteNonEmpty, ExceptionGroupManagerFailure {
+	public Boolean deleteGroup(String groupName) throws ExceptionGroupNotFound, ExceptionGroupBadRequest, ExceptionGroupUnavailableForDeleteNonLeaf, ExceptionGroupUnavailableForDeleteNonEmpty, ExceptionGroupManagerFailure {
 		//
 		if (groupName == null || groupName.isEmpty())
 			throw new ExceptionGroupBadRequest();

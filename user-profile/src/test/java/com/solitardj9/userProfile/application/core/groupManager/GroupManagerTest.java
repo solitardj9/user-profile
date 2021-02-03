@@ -87,7 +87,7 @@ public class GroupManagerTest {
 		System.out.println("// Test 5 ----------------------------------------------------------------------------------------------------");
 		searchName = "1_name_2";
 		try {
-			System.out.println("Delete Group[1_name_2] = " + groupManager.removeGroup(searchName));
+			System.out.println("Delete Group[1_name_2] = " + groupManager.deleteGroup(searchName));
 		} catch (ExceptionGroupNotFound | ExceptionGroupBadRequest | ExceptionGroupUnavailableForDeleteNonLeaf | ExceptionGroupManagerFailure | ExceptionGroupUnavailableForDeleteNonEmpty e) {
 			e.printStackTrace();
 		}
@@ -96,7 +96,7 @@ public class GroupManagerTest {
 		searchName = "3_name_7";
 		try {
 			System.out.println("Group[3_name_7] = " + groupManager.getGroup(searchName).toString());
-			System.out.println("Delete Group[3_name_7] = " + groupManager.removeGroup(searchName));
+			System.out.println("Delete Group[3_name_7] = " + groupManager.deleteGroup(searchName));
 			System.out.println("Group[3_name_7] = " + groupManager.getGroup(searchName));
 		} catch (ExceptionGroupBadRequest | ExceptionGroupNotFound | ExceptionGroupUnavailableForDeleteNonLeaf | ExceptionGroupManagerFailure | ExceptionGroupUnavailableForDeleteNonEmpty e) {
 			e.printStackTrace();
@@ -265,7 +265,7 @@ public class GroupManagerTest {
 			String groupName = "3_name_9";
 			System.out.println("Group[3_name_9] = " + groupManager.getGroup(groupName).toString());
 			try {
-				System.out.println("Delete Group[3_name_9] = " + groupManager.removeGroup(groupName));
+				System.out.println("Delete Group[3_name_9] = " + groupManager.deleteGroup(groupName));
 			} catch (ExceptionGroupBadRequest | ExceptionGroupNotFound | ExceptionGroupUnavailableForDeleteNonLeaf | ExceptionGroupManagerFailure | ExceptionGroupUnavailableForDeleteNonEmpty e) {
 				e.printStackTrace();
 			}

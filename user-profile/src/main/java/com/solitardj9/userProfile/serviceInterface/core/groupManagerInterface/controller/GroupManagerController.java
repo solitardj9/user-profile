@@ -88,7 +88,7 @@ public class GroupManagerController {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@PostMapping("/groups/{groupName}")
 	public ResponseEntity createGroup(@PathVariable("groupName") String groupName,
-									  @RequestBody(required=true) String requestBody) {		
+									  @RequestBody(required=false) String requestBody) {		
 		//
 		RequestCreateGroup request = null;
 		if (requestBody != null && !requestBody.isEmpty()) {
@@ -211,7 +211,7 @@ public class GroupManagerController {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@PatchMapping("/groups/{groupName}")
 	public ResponseEntity updateGroup(@PathVariable("groupName") String groupName,
-									  @RequestBody(required=true) String requestBody) {
+									  @RequestBody(required=false) String requestBody) {
 		//
 		RequestUpdateGroup request = null;
 		if (requestBody != null && !requestBody.isEmpty()) {
@@ -264,7 +264,7 @@ public class GroupManagerController {
 		}
 		
 		try {
-			Boolean ret = groupManager.removeGroup(groupName);
+			Boolean ret = groupManager.deleteGroup(groupName);
 			if (ret)
 				return new ResponseEntity(HttpStatus.OK);
 			else
@@ -288,7 +288,7 @@ public class GroupManagerController {
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@PutMapping("/thing-groups/thing")
-	public ResponseEntity addThingToGroup(@RequestBody(required=true) String requestBody) {
+	public ResponseEntity addThingToGroup(@RequestBody(required=false) String requestBody) {
 		//
 		RequestAddThingToGroup request = null;
 		if (requestBody != null && !requestBody.isEmpty()) {
@@ -334,7 +334,7 @@ public class GroupManagerController {
 	 */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	@PatchMapping("/thing-groups/thing")
-	public ResponseEntity updateGroupsOfThing(@RequestBody(required=true) String requestBody) {
+	public ResponseEntity updateGroupsOfThing(@RequestBody(required=false) String requestBody) {
 		//
 		RequestUpdateGroupsOfThing request = null;
 		if (requestBody != null && !requestBody.isEmpty()) {

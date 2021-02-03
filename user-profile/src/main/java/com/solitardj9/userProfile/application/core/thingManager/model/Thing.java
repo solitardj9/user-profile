@@ -27,6 +27,11 @@ public class Thing {
 	public void mergeAttributes(String attributes) {
 		//
 		try {
+			if (attributes != null & !attributes.isEmpty() & !attributes.equals("null")) {
+				if (this.attributes == null)
+					this.attributes = "{}";
+			}
+			
 			this.attributes = JsonUtil.mergeJsonString(this.attributes, attributes);
 		} catch (Exception e) {
 			logger.error("[Thing].setAttributes : error = " + e);

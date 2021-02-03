@@ -24,7 +24,7 @@ public interface GroupManager {
 	
 	public Group updateGroup(String groupName, String attributes, String groupTypeName, Boolean removeThingType, Boolean merge) throws ExceptionGroupNotFound, ExceptionGroupBadRequest, ExceptionGroupManagerFailure;
 	
-	public Boolean removeGroup(String groupName) throws ExceptionGroupNotFound, ExceptionGroupBadRequest, ExceptionGroupUnavailableForDeleteNonLeaf, ExceptionGroupUnavailableForDeleteNonEmpty, ExceptionGroupManagerFailure;
+	public Boolean deleteGroup(String groupName) throws ExceptionGroupNotFound, ExceptionGroupBadRequest, ExceptionGroupUnavailableForDeleteNonLeaf, ExceptionGroupUnavailableForDeleteNonEmpty, ExceptionGroupManagerFailure;
 	
 	public Group getGroup(String groupName) throws ExceptionGroupBadRequest, ExceptionGroupNotFound;
 	
